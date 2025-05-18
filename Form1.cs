@@ -124,6 +124,14 @@ namespace FocusStudyReminder
             
             // 默认显示主页面
             ShowMainPanel();
+            
+            // 默认进入专注模式
+            _focusMode = true;
+            navPanel.Visible = false;
+            btnToggleFocus.Text = "▶";
+            toolTip.SetToolTip(btnToggleFocus, "退出专注模式");
+            btnToggleFocus.BackColor = Color.Transparent;
+            btnToggleFocus.ForeColor = Color.FromArgb(0, 0, 0, 0);
         }
         
         // 初始化系统托盘图标
