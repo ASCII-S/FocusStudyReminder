@@ -17,6 +17,41 @@ namespace FocusStudyReminder
         private SettingsManager _settingsManager;
         private NotifyIcon _notifyIcon;
         private bool _isClosing = false;
+        
+        // 添加专注模式变量
+        private bool _focusMode = false;
+        private Button btnToggleFocus;
+        private ToolTip toolTip;
+        
+        // 添加页面导航相关变量
+        private Panel mainContentPanel;
+        private Panel settingsContentPanel;
+        private Button activeNavButton;
+        private Panel navPanel;
+        
+        // 设置相关控件
+        private NumericUpDown nudStudyMinutes;
+        private NumericUpDown nudRestMinutes;
+        private NumericUpDown nudMeditationSeconds;
+        private NumericUpDown nudMinRandomMinutes;
+        private NumericUpDown nudMaxRandomMinutes;
+        private TextBox txtSoundFile;
+        private CheckBox chkShowPopup;
+        private RadioButton radExit;
+        private RadioButton radMinimize;
+        private RadioButton radMinimizeToTray;
+        private RadioButton radAskEveryTime;
+        private CheckBox chkSilentMinimize;
+        private Button btnBrowseSoundFile;
+        private Button btnTestSound;
+        private Button btnDefaultSound;
+        
+        // 设置标签页控件
+        private TabControl settingsTabControl;
+        private TabPage tabGeneral;
+        private TabPage tabNotification;
+        private TabPage tabWindow;
+        private Button btnSaveSettings;
 
         public Form1()
         {
@@ -34,6 +69,9 @@ namespace FocusStudyReminder
             _timerManager.MeditationEnded += TimerManager_MeditationEnded;
             _timerManager.StudySessionStarted += TimerManager_StudySessionStarted;
             _timerManager.RestSessionStarted += TimerManager_RestSessionStarted;
+            
+            // 初始化导航UI
+            InitializeNavigationUI();
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -44,8 +82,34 @@ namespace FocusStudyReminder
             // 初始化界面
             UpdateUI();
             
+            // 加载设置
+            LoadSettings();
+
+            // 修改窗体最大化和大小调整行为
+            this.FormBorderStyle = FormBorderStyle.Sizable;
+            this.MaximizeBox = true;
+            
+            // 恢复保存的窗口大小
+            if (_settingsManager.WindowWidth > 0 && _settingsManager.WindowHeight > 0)
+            {
+                // 确保窗口不会超出屏幕
+                int maxWidth = Screen.PrimaryScreen.WorkingArea.Width;
+                int maxHeight = Screen.PrimaryScreen.WorkingArea.Height;
+                int width = Math.Min(_settingsManager.WindowWidth, maxWidth);
+                int height = Math.Min(_settingsManager.WindowHeight, maxHeight);
+                
+                this.Size = new Size(width, height);
+                
+                // 将窗口居中显示
+                this.StartPosition = FormStartPosition.CenterScreen;
+            }
+            
             // 添加窗体大小改变事件处理
             this.SizeChanged += Form1_SizeChanged;
+            this.Resize += Form1_Resize;
+            
+            // 默认显示主页面
+            ShowMainPanel();
         }
         
         // 初始化系统托盘图标
@@ -325,53 +389,28 @@ namespace FocusStudyReminder
             _timerManager.Stop();
         }
         
-        // 设置按钮点击事件
-        private void btnSettings_Click(object sender, EventArgs e)
+        // 窗体大小改变事件
+        private void Form1_SizeChanged(object sender, EventArgs e)
         {
-            // 暂停计时器
-            bool wasRunning = _timerManager.CurrentState != TimerState.Stopped;
-            if (wasRunning)
+            if (WindowState == FormWindowState.Minimized)
             {
-                _timerManager.Pause();
-            }
-            
-            // 显示设置窗体
-            using (SettingsForm settingsForm = new SettingsForm())
-            {
-                DialogResult result = settingsForm.ShowDialog();
-                
-                // 无论用户是保存(OK)还是取消，只要之前在运行，就恢复计时器
-                if (wasRunning)
+                if (_settingsManager.SilentMinimize)
                 {
-                    // 如果保存了新设置，先更新UI
-                    if (result == DialogResult.OK)
-                    {
-                        UpdateUI();
-                    }
-                    // 恢复计时器运行
-                    _timerManager.Resume();
+                    Hide();
+                    _notifyIcon.ShowBalloonTip(1000, "专注学习提醒器", "程序已最小化到系统托盘运行", ToolTipIcon.Info);
                 }
             }
         }
         
-        // 窗体大小改变事件
-        private void Form1_SizeChanged(object sender, EventArgs e)
+        // 窗体大小调整事件
+        private void Form1_Resize(object sender, EventArgs e)
         {
-            // 处理最小化事件
-            if (this.WindowState == FormWindowState.Minimized)
+            // 仅在窗口处于正常状态时保存大小
+            if (WindowState == FormWindowState.Normal)
             {
-                // 如果设置为静默最小化，则不显示提示
-                if (!_settingsManager.SilentMinimize)
-                {
-                    // 主动最小化时显示提示
-                    ShowBalloonTip("提示", "应用程序已最小化，将在后台继续运行", ToolTipIcon.Info);
-                }
-                
-                // 如果设置为最小化到托盘，则隐藏窗口
-                if (_settingsManager.DefaultCloseAction == CloseAction.MinimizeToTray)
-                {
-                    this.Hide();
-                }
+                _settingsManager.WindowWidth = this.Width;
+                _settingsManager.WindowHeight = this.Height;
+                _settingsManager.SaveSettings();
             }
         }
         
@@ -507,5 +546,861 @@ namespace FocusStudyReminder
         {
 
         }
+        
+        #region 导航与页面UI
+        
+        // 初始化导航UI
+        private void InitializeNavigationUI()
+        {
+            // 设置窗体大小和属性
+            this.ClientSize = new Size(800, 500);
+            this.MinimumSize = new Size(650, 400);
+            
+            // 初始化工具提示
+            toolTip = new ToolTip();
+            toolTip.AutoPopDelay = 5000;
+            toolTip.InitialDelay = 500;
+            toolTip.ReshowDelay = 200;
+            toolTip.ShowAlways = true;
+            
+            // 创建内容面板
+            Panel contentPanel = new Panel
+            {
+                Dock = DockStyle.Fill
+            };
+            this.Controls.Add(contentPanel);
+
+            // 创建导航面板
+            navPanel = new Panel
+            {
+                BackColor = Color.FromArgb(240, 240, 240),
+                Dock = DockStyle.Left,
+                Width = 180
+            };
+            this.Controls.Add(navPanel);
+            // 创建主页和设置页
+            mainContentPanel = new Panel
+            {
+                Dock = DockStyle.Fill,
+                BackColor = Color.White
+            };
+            settingsContentPanel = new Panel
+            {
+                Dock = DockStyle.Fill,
+                BackColor = Color.White,
+                Visible = false
+            };
+            
+            contentPanel.Controls.Add(settingsContentPanel);
+            contentPanel.Controls.Add(mainContentPanel);
+            
+            // 初始创建专注模式按钮
+            CreateFocusModeButton();
+            
+            // 创建导航按钮
+            Button btnNavHome = new Button
+            {
+                Text = "主页",
+                FlatStyle = FlatStyle.Flat,
+                FlatAppearance = { BorderSize = 0 },
+                Size = new Size(180, 45),
+                Font = new Font("微软雅黑", 10.5f),
+                TextAlign = ContentAlignment.MiddleLeft,
+                Padding = new Padding(20, 0, 0, 0),
+                Image = null, // 如果有图标，可以在这里设置
+                ImageAlign = ContentAlignment.MiddleLeft,
+                Dock = DockStyle.Top
+            };
+            btnNavHome.Click += BtnNavHome_Click;
+            
+            Button btnNavSettings = new Button
+            {
+                Text = "设置",
+                FlatStyle = FlatStyle.Flat,
+                FlatAppearance = { BorderSize = 0 },
+                Size = new Size(180, 45),
+                Font = new Font("微软雅黑", 10.5f),
+                TextAlign = ContentAlignment.MiddleLeft,
+                Padding = new Padding(20, 0, 0, 0),
+                Image = null, // 如果有图标，可以在这里设置
+                ImageAlign = ContentAlignment.MiddleLeft,
+                Dock = DockStyle.Top
+            };
+            btnNavSettings.Click += BtnNavSettings_Click;
+            
+            // 添加导航标题
+            Label lblNavTitle = new Label
+            {
+                Text = "专注学习提醒器",
+                Dock = DockStyle.Top,
+                Height = 60,
+                Font = new Font("微软雅黑", 12f, FontStyle.Bold),
+                TextAlign = ContentAlignment.MiddleCenter
+            };
+            
+            // 添加控件到导航面板
+            navPanel.Controls.Add(btnNavSettings);
+            navPanel.Controls.Add(btnNavHome);
+            navPanel.Controls.Add(lblNavTitle);
+            
+            // 初始化设置面板
+            CreateSettingsContent();
+            
+            // 将主窗体控件移动到mainContentPanel
+            MoveControlsToMainPanel();
+            
+            // 激活主页按钮
+            ActiveNavButton(btnNavHome);
+        }
+        
+        private void MoveControlsToMainPanel()
+        {
+            // 获取所有需要移动的控件
+            List<Control> controlsToMove = new List<Control>();
+            foreach (Control control in this.Controls)
+            {
+                if (control != navPanel && 
+                    control != mainContentPanel && 
+                    control != settingsContentPanel &&
+                    !(control is Panel && control.Controls.Contains(mainContentPanel)))
+                {
+                    controlsToMove.Add(control);
+                }
+            }
+            
+            // 移动控件到主内容面板
+            foreach (Control control in controlsToMove)
+            {
+                this.Controls.Remove(control);
+                mainContentPanel.Controls.Add(control);
+            }
+            
+            // 创建布局面板用于自动调整布局
+            TableLayoutPanel layoutPanel = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 3,
+                RowCount = 6,
+                ColumnStyles = {
+                    new ColumnStyle(SizeType.Percent, 20),
+                    new ColumnStyle(SizeType.Percent, 60),
+                    new ColumnStyle(SizeType.Percent, 20)
+                },
+                RowStyles = {
+                    new RowStyle(SizeType.Percent, 10),
+                    new RowStyle(SizeType.Percent, 30),  // 主计时器行 - 增加比例
+                    new RowStyle(SizeType.Percent, 5),
+                    new RowStyle(SizeType.Percent, 20),  // 子计时器行 - 减小比例
+                    new RowStyle(SizeType.Percent, 10),
+                    new RowStyle(SizeType.Percent, 25)
+                },
+                Padding = new Padding(15),
+                CellBorderStyle = TableLayoutPanelCellBorderStyle.None
+            };
+            
+            mainContentPanel.Controls.Add(layoutPanel);
+            
+            // 临时保存需要保留的控件
+            List<Control> controlsToKeep = new List<Control>();
+            
+            // 设置所有控件的Dock属性为Fill
+            foreach (Control control in mainContentPanel.Controls)
+            {
+                if (control != layoutPanel && control != btnToggleFocus)
+                {
+                    controlsToKeep.Add(control);
+                }
+            }
+            
+            // 移除不需要的控件
+            foreach (Control control in controlsToKeep)
+            {
+                mainContentPanel.Controls.Remove(control);
+            }
+            
+            // 确保专注模式按钮显示在最上层
+            if (mainContentPanel.Controls.Contains(btnToggleFocus))
+            {
+                mainContentPanel.Controls.SetChildIndex(btnToggleFocus, 0);
+            }
+            else
+            {
+                // 如果按钮不在控件集合中，重新添加
+                CreateFocusModeButton();
+            }
+            
+            // 创建标签组
+            Panel pnlMainTimer = new Panel
+            {
+                Dock = DockStyle.Fill
+            };
+            
+            Panel pnlSubTimer = new Panel
+            {
+                Dock = DockStyle.Fill
+            };
+            
+            // 设置主计时器控件
+            lblMainLabel.Dock = DockStyle.Top;
+            lblMainLabel.TextAlign = ContentAlignment.MiddleCenter;
+            lblMainLabel.Font = new Font("微软雅黑", 11, FontStyle.Bold);
+            lblMainLabel.Height = 25;
+            
+            lblMainTimer.Dock = DockStyle.Fill;
+            lblMainTimer.TextAlign = ContentAlignment.MiddleCenter;
+            lblMainTimer.Font = new Font("微软雅黑", 48, FontStyle.Bold);
+            
+            progressBarMain.Dock = DockStyle.Bottom;
+            progressBarMain.Height = 24;
+            
+            // 设置子计时器控件
+            lblSubLabel.Dock = DockStyle.Top;
+            lblSubLabel.TextAlign = ContentAlignment.MiddleCenter;
+            lblSubLabel.Font = new Font("微软雅黑", 9);
+            lblSubLabel.Height = 20;
+            
+            lblSubTimer.Dock = DockStyle.Fill;
+            lblSubTimer.TextAlign = ContentAlignment.MiddleCenter;
+            lblSubTimer.Font = new Font("微软雅黑", 32, FontStyle.Bold);
+            
+            progressBarSub.Dock = DockStyle.Bottom;
+            progressBarSub.Height = 16;
+            
+            // 状态标签
+            lblStatus.Dock = DockStyle.Fill;
+            lblStatus.TextAlign = ContentAlignment.MiddleCenter;
+            lblStatus.Font = new Font("微软雅黑", 24, FontStyle.Bold);
+            
+            // 添加控件到面板
+            pnlMainTimer.Controls.Add(lblMainTimer);
+            pnlMainTimer.Controls.Add(lblMainLabel);
+            pnlMainTimer.Controls.Add(progressBarMain);
+            
+            pnlSubTimer.Controls.Add(lblSubTimer);
+            pnlSubTimer.Controls.Add(lblSubLabel);
+            pnlSubTimer.Controls.Add(progressBarSub);
+            
+            // 添加控件到布局面板
+            layoutPanel.Controls.Add(pnlMainTimer, 1, 1);
+            layoutPanel.Controls.Add(pnlSubTimer, 1, 3);
+            layoutPanel.Controls.Add(lblStatus, 1, 4);
+            
+            // 创建按钮面板
+            Panel buttonPanel = new Panel
+            {
+                Dock = DockStyle.Fill
+            };
+            
+            buttonPanel.Controls.Add(btnStart);
+            buttonPanel.Controls.Add(btnStop);
+            
+            // 设置按钮属性
+            int btnWidth = 120;
+            int btnHeight = 40;
+            btnStart.Size = new Size(btnWidth, btnHeight);
+            btnStop.Size = new Size(btnWidth, btnHeight);
+            
+            // 动态调整按钮位置
+            buttonPanel.Resize += (s, e) => 
+            {
+                btnStart.Location = new Point(buttonPanel.Width / 4 - btnWidth / 2, buttonPanel.Height / 2 - btnHeight / 2);
+                btnStop.Location = new Point(buttonPanel.Width * 3 / 4 - btnWidth / 2, buttonPanel.Height / 2 - btnHeight / 2);
+            };
+            
+            layoutPanel.Controls.Add(buttonPanel, 1, 5);
+            
+            // 初始调整按钮位置
+            buttonPanel.Size = new Size(layoutPanel.GetColumnWidths()[1], layoutPanel.GetRowHeights()[5]);
+            btnStart.Location = new Point(buttonPanel.Width / 4 - btnWidth / 2, buttonPanel.Height / 2 - btnHeight / 2);
+            btnStop.Location = new Point(buttonPanel.Width * 3 / 4 - btnWidth / 2, buttonPanel.Height / 2 - btnHeight / 2);
+        }
+        
+        // 添加创建专注模式按钮的独立方法
+        private void CreateFocusModeButton()
+        {
+            // 创建专注模式按钮
+            btnToggleFocus = new Button
+            {
+                FlatStyle = FlatStyle.Flat,
+                FlatAppearance = { BorderSize = 0 },
+                Size = new Size(32, 32),
+                Location = new Point(5, 5),
+                Text = "◀",
+                Font = new Font("微软雅黑", 12, FontStyle.Bold),
+                BackColor = Color.FromArgb(240, 240, 240),
+                ForeColor = Color.FromArgb(80, 80, 80),
+                Cursor = Cursors.Hand,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left
+            };
+            
+            // 添加鼠标事件
+            btnToggleFocus.MouseEnter += BtnToggleFocus_MouseEnter;
+            btnToggleFocus.MouseLeave += BtnToggleFocus_MouseLeave;
+            
+            toolTip.SetToolTip(btnToggleFocus, "进入专注模式");
+            btnToggleFocus.Click += BtnToggleFocus_Click;
+            mainContentPanel.Controls.Add(btnToggleFocus);
+            mainContentPanel.Controls.SetChildIndex(btnToggleFocus, 0);
+        }
+        
+        // 鼠标进入按钮区域
+        private void BtnToggleFocus_MouseEnter(object sender, EventArgs e)
+        {
+            if (_focusMode)
+            {
+                // 在专注模式下，鼠标进入时显示按钮
+                btnToggleFocus.BackColor = Color.FromArgb(240, 240, 240);
+                btnToggleFocus.ForeColor = Color.FromArgb(80, 80, 80);
+            }
+        }
+        
+        // 鼠标离开按钮区域
+        private void BtnToggleFocus_MouseLeave(object sender, EventArgs e)
+        {
+            if (_focusMode)
+            {
+                // 在专注模式下，鼠标离开时使按钮透明
+                btnToggleFocus.BackColor = Color.Transparent;
+                btnToggleFocus.ForeColor = Color.FromArgb(0, 0, 0, 0);
+            }
+        }
+        
+        // 添加专注模式切换事件处理
+        private void BtnToggleFocus_Click(object sender, EventArgs e)
+        {
+            _focusMode = !_focusMode;
+            
+            if (_focusMode)
+            {
+                // 进入专注模式 - 隐藏导航栏
+                navPanel.Visible = false;
+                btnToggleFocus.Text = "▶";
+                toolTip.SetToolTip(btnToggleFocus, "退出专注模式");
+                
+                // 使按钮透明
+                btnToggleFocus.BackColor = Color.Transparent;
+                btnToggleFocus.ForeColor = Color.FromArgb(0, 0, 0, 0);
+            }
+            else
+            {
+                // 退出专注模式 - 显示导航栏
+                navPanel.Visible = true;
+                btnToggleFocus.Text = "◀";
+                toolTip.SetToolTip(btnToggleFocus, "进入专注模式");
+                
+                // 恢复按钮可见性
+                btnToggleFocus.BackColor = Color.FromArgb(240, 240, 240);
+                btnToggleFocus.ForeColor = Color.FromArgb(80, 80, 80);
+            }
+        }
+        
+        private void CreateSettingsContent()
+        {
+            // 创建标签页控件
+            settingsTabControl = new TabControl
+            {
+                Dock = DockStyle.Top,
+                Padding = new Point(12, 8),
+                Margin = new Padding(15),
+                Font = new Font("微软雅黑", 10),
+                Height = settingsContentPanel.Height - 70 // 留出底部空间给保存按钮
+            };
+            
+            // 创建常规标签页（包含时间和随机提醒设置）
+            tabGeneral = new TabPage("常规");
+            
+            // 创建通知设置标签页
+            tabNotification = new TabPage("通知设置");
+            
+            // 创建窗口行为标签页
+            tabWindow = new TabPage("窗口行为");
+            
+            // 添加标签页到标签页控件
+            settingsTabControl.Controls.Add(tabGeneral);
+            settingsTabControl.Controls.Add(tabNotification);
+            settingsTabControl.Controls.Add(tabWindow);
+            
+            // 创建FlowLayoutPanel用于自适应布局
+            FlowLayoutPanel generalPanel = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.TopDown,
+                AutoScroll = true,
+                Padding = new Padding(10),
+                WrapContents = false
+            };
+            tabGeneral.Controls.Add(generalPanel);
+            
+            FlowLayoutPanel notificationPanel = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.TopDown,
+                AutoScroll = true,
+                Padding = new Padding(10),
+                WrapContents = false
+            };
+            tabNotification.Controls.Add(notificationPanel);
+            
+            FlowLayoutPanel windowPanel = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.TopDown,
+                AutoScroll = true,
+                Padding = new Padding(10),
+                WrapContents = false
+            };
+            tabWindow.Controls.Add(windowPanel);
+            
+            // 创建常规设置控件
+            Panel pnlStudyMinutes = new Panel { Width = 350, Height = 40, Margin = new Padding(3, 5, 3, 5) };
+            Label lblStudyMinutes = new Label
+            {
+                Text = "学习时长(分钟):",
+                AutoSize = true,
+                Font = new Font("微软雅黑", 10),
+                Location = new Point(0, 10)
+            };
+            nudStudyMinutes = new NumericUpDown
+            {
+                Minimum = 1,
+                Maximum = 180,
+                Width = 120,
+                Font = new Font("微软雅黑", 10),
+                Location = new Point(220, 8)
+            };
+            pnlStudyMinutes.Controls.Add(lblStudyMinutes);
+            pnlStudyMinutes.Controls.Add(nudStudyMinutes);
+            
+            Panel pnlRestMinutes = new Panel { Width = 350, Height = 40, Margin = new Padding(3, 5, 3, 5) };
+            Label lblRestMinutes = new Label
+            {
+                Text = "休息时长(分钟):",
+                AutoSize = true,
+                Font = new Font("微软雅黑", 10),
+                Location = new Point(0, 10)
+            };
+            nudRestMinutes = new NumericUpDown
+            {
+                Minimum = 1,
+                Maximum = 60,
+                Width = 120,
+                Font = new Font("微软雅黑", 10),
+                Location = new Point(220, 8)
+            };
+            pnlRestMinutes.Controls.Add(lblRestMinutes);
+            pnlRestMinutes.Controls.Add(nudRestMinutes);
+            
+            Panel pnlMeditationSeconds = new Panel { Width = 350, Height = 40, Margin = new Padding(3, 5, 3, 5) };
+            Label lblMeditationSeconds = new Label
+            {
+                Text = "冥想时长(秒):",
+                AutoSize = true,
+                Font = new Font("微软雅黑", 10),
+                Location = new Point(0, 10)
+            };
+            nudMeditationSeconds = new NumericUpDown
+            {
+                Minimum = 5,
+                Maximum = 60,
+                Width = 120,
+                Font = new Font("微软雅黑", 10),
+                Location = new Point(220, 8)
+            };
+            pnlMeditationSeconds.Controls.Add(lblMeditationSeconds);
+            pnlMeditationSeconds.Controls.Add(nudMeditationSeconds);
+            
+            Panel pnlMinRandomMinutes = new Panel { Width = 350, Height = 40, Margin = new Padding(3, 5, 3, 5) };
+            Label lblMinRandomMinutes = new Label
+            {
+                Text = "随机提醒最小间隔(分钟):",
+                AutoSize = true,
+                Font = new Font("微软雅黑", 10),
+                Location = new Point(0, 10)
+            };
+            nudMinRandomMinutes = new NumericUpDown
+            {
+                Minimum = 1,
+                Maximum = 30,
+                Width = 120,
+                Font = new Font("微软雅黑", 10),
+                Location = new Point(220, 8)
+            };
+            pnlMinRandomMinutes.Controls.Add(lblMinRandomMinutes);
+            pnlMinRandomMinutes.Controls.Add(nudMinRandomMinutes);
+            
+            Panel pnlMaxRandomMinutes = new Panel { Width = 350, Height = 40, Margin = new Padding(3, 5, 3, 5) };
+            Label lblMaxRandomMinutes = new Label
+            {
+                Text = "随机提醒最大间隔(分钟):",
+                AutoSize = true,
+                Font = new Font("微软雅黑", 10),
+                Location = new Point(0, 10)
+            };
+            nudMaxRandomMinutes = new NumericUpDown
+            {
+                Minimum = 1,
+                Maximum = 60,
+                Width = 120,
+                Font = new Font("微软雅黑", 10),
+                Location = new Point(220, 8)
+            };
+            pnlMaxRandomMinutes.Controls.Add(lblMaxRandomMinutes);
+            pnlMaxRandomMinutes.Controls.Add(nudMaxRandomMinutes);
+            
+            // 创建通知设置控件
+            Panel pnlSoundFile = new Panel { Width = 370, Height = 40, Margin = new Padding(3, 5, 3, 5) };
+            Label lblSoundFile = new Label
+            {
+                Text = "提示音效文件:",
+                AutoSize = true,
+                Font = new Font("微软雅黑", 10),
+                Location = new Point(0, 10)
+            };
+
+            Panel soundFilePanel = new Panel
+            {
+                Width = 240,
+                Height = 30,
+                Location = new Point(120, 5)
+            };
+            
+            txtSoundFile = new TextBox
+            {
+                Width = 240,
+                Font = new Font("微软雅黑", 9),
+                Location = new Point(0, 0)
+            };
+            
+            btnBrowseSoundFile = new Button
+            {
+                Text = "浏览",
+                Width = 60,
+                Location = new Point(245, 0),
+                Font = new Font("微软雅黑", 9)
+            };
+            btnBrowseSoundFile.Click += BtnBrowseSoundFile_Click;
+            
+            btnTestSound = new Button
+            {
+                Text = "测试",
+                Width = 60,
+                Location = new Point(310, 0),
+                Font = new Font("微软雅黑", 9)
+            };
+            btnTestSound.Click += BtnTestSound_Click;
+            
+            soundFilePanel.Controls.Add(txtSoundFile);
+            pnlSoundFile.Controls.Add(lblSoundFile);
+            pnlSoundFile.Controls.Add(soundFilePanel);
+            
+            Panel pnlDefaultSound = new Panel { Width = 370, Height = 40, Margin = new Padding(3, 5, 3, 5) };
+            btnDefaultSound = new Button
+            {
+                Text = "恢复默认音效",
+                AutoSize = true,
+                Font = new Font("微软雅黑", 9),
+                Location = new Point(120, 5)
+            };
+            btnDefaultSound.Click += BtnDefaultSound_Click;
+            pnlDefaultSound.Controls.Add(btnDefaultSound);
+            
+            // 添加控件到通知面板
+            notificationPanel.Controls.Add(pnlSoundFile);
+            
+            // 添加浏览和测试按钮到控件面板
+            Panel btnPanel = new Panel { Width = 370, Height = 40, Margin = new Padding(3, 5, 3, 5) };
+            btnPanel.Controls.Add(btnBrowseSoundFile);
+            btnPanel.Controls.Add(btnTestSound);
+            btnBrowseSoundFile.Location = new Point(120, 5);
+            btnTestSound.Location = new Point(190, 5);
+            notificationPanel.Controls.Add(btnPanel);
+
+            notificationPanel.Controls.Add(pnlDefaultSound);
+
+            Panel pnlShowPopup = new Panel { Width = 370, Height = 40, Margin = new Padding(3, 5, 3, 5) };
+            chkShowPopup = new CheckBox
+            {
+                Text = "提示时弹出系统弹窗",
+                AutoSize = true,
+                Font = new Font("微软雅黑", 10),
+                Location = new Point(120, 10)
+            };
+            pnlShowPopup.Controls.Add(chkShowPopup);
+            notificationPanel.Controls.Add(pnlShowPopup);
+            
+            
+            // 创建窗口行为控件
+            Panel pnlCloseAction = new Panel { Width = 370, Height = 160, Margin = new Padding(3, 5, 3, 5) };
+            Label lblCloseAction = new Label
+            {
+                Text = "关闭窗口行为:",
+                AutoSize = true,
+                Font = new Font("微软雅黑", 10),
+                Location = new Point(0, 10)
+            };
+            
+            GroupBox groupCloseAction = new GroupBox
+            {
+                Text = "",
+                Width = 240,
+                Height = 130,
+                Location = new Point(120, 0),
+                Font = new Font("微软雅黑", 10)
+            };
+            
+            radExit = new RadioButton
+            {
+                Text = "退出程序",
+                AutoSize = true,
+                Location = new Point(10, 15),
+                Font = new Font("微软雅黑", 9.5f)
+            };
+            
+            radMinimize = new RadioButton
+            {
+                Text = "最小化到任务栏",
+                AutoSize = true,
+                Location = new Point(10, 40),
+                Font = new Font("微软雅黑", 9.5f)
+            };
+            
+            radMinimizeToTray = new RadioButton
+            {
+                Text = "最小化到系统托盘",
+                AutoSize = true,
+                Location = new Point(10, 65),
+                Font = new Font("微软雅黑", 9.5f)
+            };
+            
+            radAskEveryTime = new RadioButton
+            {
+                Text = "每次询问",
+                AutoSize = true,
+                Location = new Point(10, 90),
+                Font = new Font("微软雅黑", 9.5f)
+            };
+            
+            groupCloseAction.Controls.Add(radExit);
+            groupCloseAction.Controls.Add(radMinimize);
+            groupCloseAction.Controls.Add(radMinimizeToTray);
+            groupCloseAction.Controls.Add(radAskEveryTime);
+            
+            pnlCloseAction.Controls.Add(lblCloseAction);
+            pnlCloseAction.Controls.Add(groupCloseAction);
+            
+            Panel pnlSilentMinimize = new Panel { Width = 370, Height = 40, Margin = new Padding(3, 5, 3, 5) };
+            chkSilentMinimize = new CheckBox
+            {
+                Text = "静默最小化到托盘(不显示提示)",
+                AutoSize = true,
+                Font = new Font("微软雅黑", 10),
+                Location = new Point(120, 10)
+            };
+            pnlSilentMinimize.Controls.Add(chkSilentMinimize);
+            
+            // 添加控件到各自的面板
+            generalPanel.Controls.Add(pnlStudyMinutes);
+            generalPanel.Controls.Add(pnlRestMinutes);
+            generalPanel.Controls.Add(pnlMeditationSeconds);
+            generalPanel.Controls.Add(pnlMinRandomMinutes);
+            generalPanel.Controls.Add(pnlMaxRandomMinutes);
+            
+            // 添加控件到窗口行为面板
+            windowPanel.Controls.Add(pnlCloseAction);
+            windowPanel.Controls.Add(pnlSilentMinimize);
+            
+            // 创建保存按钮
+            btnSaveSettings = new Button
+            {
+                Text = "保存设置",
+                Width = 120,
+                Height = 35,
+                Font = new Font("微软雅黑", 10),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(0, 122, 204),
+                ForeColor = Color.White,
+                Anchor = AnchorStyles.Bottom | AnchorStyles.Right,
+                Location = new Point(settingsContentPanel.Width - 140, settingsContentPanel.Height - 55)
+            };
+            btnSaveSettings.Click += BtnSaveSettings_Click;
+            
+            // 添加控件到设置内容面板
+            settingsContentPanel.Controls.Add(settingsTabControl);
+            settingsContentPanel.Controls.Add(btnSaveSettings);
+            
+            // 设置Resize事件处理
+            settingsContentPanel.Resize += (s, e) => {
+                btnSaveSettings.Location = new Point(settingsContentPanel.Width - 140, settingsContentPanel.Height - 55);
+                settingsTabControl.Height = settingsContentPanel.Height - 70; // 更新TabControl高度
+            };
+        }
+        
+        private void BtnNavHome_Click(object sender, EventArgs e)
+        {
+            ActiveNavButton((Button)sender);
+            ShowMainPanel();
+        }
+        
+        private void BtnNavSettings_Click(object sender, EventArgs e)
+        {
+            ActiveNavButton((Button)sender);
+            ShowSettingsPanel();
+        }
+        
+        private void ActiveNavButton(Button button)
+        {
+            if (activeNavButton != null)
+            {
+                activeNavButton.BackColor = Color.FromArgb(240, 240, 240);
+                activeNavButton.ForeColor = Color.FromArgb(64, 64, 64);
+                activeNavButton.Font = new Font("微软雅黑", 10.5f, FontStyle.Regular);
+            }
+            
+            button.BackColor = Color.FromArgb(0, 122, 204);
+            button.ForeColor = Color.White;
+            button.Font = new Font("微软雅黑", 10.5f, FontStyle.Bold);
+            activeNavButton = button;
+        }
+        
+        private void ShowMainPanel()
+        {
+            mainContentPanel.BringToFront();
+            mainContentPanel.Visible = true;
+            settingsContentPanel.Visible = false;
+        }
+        
+        private void ShowSettingsPanel()
+        {
+            // 每次显示设置面板时，更新设置控件的值
+            nudStudyMinutes.Value = _settingsManager.StudyMinutes;
+            nudRestMinutes.Value = _settingsManager.RestMinutes;
+            nudMeditationSeconds.Value = _settingsManager.MeditationSeconds;
+            nudMinRandomMinutes.Value = _settingsManager.MinRandomMinutes;
+            nudMaxRandomMinutes.Value = _settingsManager.MaxRandomMinutes;
+            txtSoundFile.Text = _settingsManager.SoundFile;
+            chkShowPopup.Checked = _settingsManager.ShowPopup;
+            
+            // 设置关闭行为选项
+            switch (_settingsManager.DefaultCloseAction)
+            {
+                case CloseAction.Exit:
+                    radExit.Checked = true;
+                    break;
+                case CloseAction.Minimize:
+                    radMinimize.Checked = true;
+                    break;
+                case CloseAction.MinimizeToTray:
+                    radMinimizeToTray.Checked = true;
+                    break;
+                case CloseAction.AskEveryTime:
+                    radAskEveryTime.Checked = true;
+                    break;
+            }
+            
+            // 设置最小化静默选项
+            chkSilentMinimize.Checked = _settingsManager.SilentMinimize;
+            
+            settingsContentPanel.BringToFront();
+            settingsContentPanel.Visible = true;
+            mainContentPanel.Visible = false;
+        }
+        
+        private void BtnSaveSettings_Click(object sender, EventArgs e)
+        {
+            // 验证随机时间范围
+            if (nudMinRandomMinutes.Value > nudMaxRandomMinutes.Value)
+            {
+                MessageBox.Show("随机时间最小值不能大于最大值", "验证错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            // 保存设置
+            _settingsManager.StudyMinutes = (int)nudStudyMinutes.Value;
+            _settingsManager.RestMinutes = (int)nudRestMinutes.Value;
+            _settingsManager.MeditationSeconds = (int)nudMeditationSeconds.Value;
+            _settingsManager.MinRandomMinutes = (int)nudMinRandomMinutes.Value;
+            _settingsManager.MaxRandomMinutes = (int)nudMaxRandomMinutes.Value;
+            _settingsManager.SoundFile = txtSoundFile.Text;
+            _settingsManager.ShowPopup = chkShowPopup.Checked;
+            
+            // 保存关闭行为设置
+            if (radExit.Checked)
+                _settingsManager.DefaultCloseAction = CloseAction.Exit;
+            else if (radMinimize.Checked)
+                _settingsManager.DefaultCloseAction = CloseAction.Minimize;
+            else if (radMinimizeToTray.Checked)
+                _settingsManager.DefaultCloseAction = CloseAction.MinimizeToTray;
+            else if (radAskEveryTime.Checked)
+                _settingsManager.DefaultCloseAction = CloseAction.AskEveryTime;
+                
+            // 保存最小化静默设置
+            _settingsManager.SilentMinimize = chkSilentMinimize.Checked;
+            
+            // 保存到配置
+            _settingsManager.SaveSettings();
+            
+            // 重新加载音效
+            SoundManager.Instance.LoadSound(_settingsManager.SoundFile);
+            
+            // 更新计时器设置
+            _timerManager.UpdateSettings();
+            
+            // 显示保存成功提示
+            MessageBox.Show("设置已保存", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            
+            // 切换到主页面
+            Button homeButton = navPanel.Controls.OfType<Button>().FirstOrDefault(b => b.Text == "主页");
+            if (homeButton != null)
+            {
+                BtnNavHome_Click(homeButton, EventArgs.Empty);
+            }
+        }
+        
+        private void BtnBrowseSoundFile_Click(object sender, EventArgs e)
+        {
+            using (OpenFileDialog openFileDialog = new OpenFileDialog())
+            {
+                openFileDialog.Filter = "WAV音频文件(*.wav)|*.wav|所有文件(*.*)|*.*";
+                openFileDialog.Title = "选择提示音效文件";
+
+                if (openFileDialog.ShowDialog() == DialogResult.OK)
+                {
+                    txtSoundFile.Text = openFileDialog.FileName;
+                    
+                    // 测试播放选择的音效
+                    SoundManager.Instance.LoadSound(openFileDialog.FileName);
+                    SoundManager.Instance.Play();
+                }
+            }
+        }
+
+        private void BtnTestSound_Click(object sender, EventArgs e)
+        {
+            // 测试播放当前音效
+            if (!string.IsNullOrEmpty(txtSoundFile.Text))
+            {
+                SoundManager.Instance.LoadSound(txtSoundFile.Text);
+                SoundManager.Instance.Play();
+            }
+            else
+            {
+                MessageBox.Show("请先选择一个音效文件", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+        }
+
+        private void BtnDefaultSound_Click(object sender, EventArgs e)
+        {
+            // 恢复默认音效
+            txtSoundFile.Text = "default.wav";
+            SoundManager.Instance.LoadDefaultSound();
+            SoundManager.Instance.Play();
+        }
+        
+        private void LoadSettings()
+        {
+            // 已在ShowSettingsPanel方法中实现设置加载
+        }
+        
+        #endregion
     }
 }

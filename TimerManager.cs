@@ -205,6 +205,37 @@ namespace FocusStudyReminder
             // 触发事件
             StateChanged?.Invoke(this, _currentState);
         }
+        
+        // 更新设置
+        public void UpdateSettings()
+        {
+            // 当前正在进行学习或休息时，更新对应的计时器剩余时间
+            if (_currentState == TimerState.Study)
+            {
+                // 如果当前剩余时间大于设置的最大时间，则重置为设置的时间
+                if (_mainRemainingSeconds > SettingsManager.Instance.StudyMinutes * 60)
+                {
+                    _mainRemainingSeconds = SettingsManager.Instance.StudyMinutes * 60;
+                }
+            }
+            else if (_currentState == TimerState.Rest)
+            {
+                // 如果当前剩余时间大于设置的最大时间，则重置为设置的时间
+                if (_mainRemainingSeconds > SettingsManager.Instance.RestMinutes * 60)
+                {
+                    _mainRemainingSeconds = SettingsManager.Instance.RestMinutes * 60;
+                }
+            }
+            else if (_currentState == TimerState.Meditation)
+            {
+                // 冥想状态下，如果设置的时间小于当前剩余时间，则更新
+                if (_subRemainingSeconds > SettingsManager.Instance.MeditationSeconds)
+                {
+                    _subRemainingSeconds = SettingsManager.Instance.MeditationSeconds;
+                    _subInitialSeconds = _subRemainingSeconds;
+                }
+            }
+        }
 
         // 主计时器Tick事件处理
         private void MainTimer_Tick(object sender, EventArgs e)
@@ -270,19 +301,18 @@ namespace FocusStudyReminder
             return _subRemainingSeconds;
         }
 
-        // 获取子计时器初始总秒数
+        // 获取子计时器初始时间
         public int GetSubInitialSeconds()
         {
             return _subInitialSeconds;
         }
-        
-        // 格式化时间显示
+
+        // 格式化时间显示（秒转为mm:ss格式）
         public static string FormatTime(int seconds)
         {
-            TimeSpan time = TimeSpan.FromSeconds(seconds);
-            return time.TotalHours >= 1 
-                ? string.Format("{0:D2}:{1:D2}:{2:D2}", (int)time.TotalHours, time.Minutes, time.Seconds) 
-                : string.Format("{0:D2}:{1:D2}", time.Minutes, time.Seconds);
+            int minutes = seconds / 60;
+            int remainingSeconds = seconds % 60;
+            return $"{minutes:00}:{remainingSeconds:00}";
         }
     }
 } 

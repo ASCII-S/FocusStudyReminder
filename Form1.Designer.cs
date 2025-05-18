@@ -36,7 +36,6 @@
             this.progressBarSub = new System.Windows.Forms.ProgressBar();
             this.btnStart = new System.Windows.Forms.Button();
             this.btnStop = new System.Windows.Forms.Button();
-            this.btnSettings = new System.Windows.Forms.Button();
             this.lblMainLabel = new System.Windows.Forms.Label();
             this.lblSubLabel = new System.Windows.Forms.Label();
             this.SuspendLayout();
@@ -47,7 +46,7 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.lblMainTimer.Font = new System.Drawing.Font("Segoe UI", 32F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblMainTimer.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(64)))), ((int)(((byte)(64)))));
-            this.lblMainTimer.Location = new System.Drawing.Point(20, 50);
+            this.lblMainTimer.Location = new System.Drawing.Point(100, 50);
             this.lblMainTimer.Name = "lblMainTimer";
             this.lblMainTimer.Size = new System.Drawing.Size(330, 80);
             this.lblMainTimer.TabIndex = 0;
@@ -61,7 +60,7 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.lblSubTimer.Font = new System.Drawing.Font("Segoe UI", 20F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblSubTimer.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(100)))), ((int)(((byte)(100)))), ((int)(((byte)(100)))));
-            this.lblSubTimer.Location = new System.Drawing.Point(20, 187);
+            this.lblSubTimer.Location = new System.Drawing.Point(100, 187);
             this.lblSubTimer.Name = "lblSubTimer";
             this.lblSubTimer.Size = new System.Drawing.Size(330, 56);
             this.lblSubTimer.TabIndex = 1;
@@ -74,7 +73,7 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.lblStatus.Font = new System.Drawing.Font("Segoe UI", 16F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblStatus.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(120)))), ((int)(((byte)(120)))), ((int)(((byte)(120)))));
-            this.lblStatus.Location = new System.Drawing.Point(20, 268);
+            this.lblStatus.Location = new System.Drawing.Point(100, 268);
             this.lblStatus.Name = "lblStatus";
             this.lblStatus.Size = new System.Drawing.Size(330, 44);
             this.lblStatus.TabIndex = 2;
@@ -87,7 +86,7 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.progressBarMain.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(240)))), ((int)(((byte)(240)))));
             this.progressBarMain.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(107)))), ((int)(((byte)(107)))));
-            this.progressBarMain.Location = new System.Drawing.Point(20, 152);
+            this.progressBarMain.Location = new System.Drawing.Point(100, 152);
             this.progressBarMain.Name = "progressBarMain";
             this.progressBarMain.Size = new System.Drawing.Size(330, 8);
             this.progressBarMain.Style = System.Windows.Forms.ProgressBarStyle.Continuous;
@@ -99,7 +98,7 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.progressBarSub.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(240)))), ((int)(((byte)(240)))));
             this.progressBarSub.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(107)))), ((int)(((byte)(185)))), ((int)(((byte)(240)))));
-            this.progressBarSub.Location = new System.Drawing.Point(20, 246);
+            this.progressBarSub.Location = new System.Drawing.Point(100, 246);
             this.progressBarSub.Name = "progressBarSub";
             this.progressBarSub.Size = new System.Drawing.Size(330, 5);
             this.progressBarSub.Style = System.Windows.Forms.ProgressBarStyle.Continuous;
@@ -113,7 +112,7 @@
             this.btnStart.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnStart.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnStart.ForeColor = System.Drawing.Color.White;
-            this.btnStart.Location = new System.Drawing.Point(20, 337);
+            this.btnStart.Location = new System.Drawing.Point(100, 337);
             this.btnStart.Name = "btnStart";
             this.btnStart.Size = new System.Drawing.Size(100, 40);
             this.btnStart.TabIndex = 5;
@@ -130,7 +129,7 @@
             this.btnStop.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnStop.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnStop.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(64)))), ((int)(((byte)(64)))));
-            this.btnStop.Location = new System.Drawing.Point(135, 337);
+            this.btnStop.Location = new System.Drawing.Point(215, 337);
             this.btnStop.Name = "btnStop";
             this.btnStop.Size = new System.Drawing.Size(100, 40);
             this.btnStop.TabIndex = 6;
@@ -138,28 +137,12 @@
             this.btnStop.UseVisualStyleBackColor = false;
             this.btnStop.Click += new System.EventHandler(this.btnStop_Click);
             // 
-            // btnSettings
-            // 
-            this.btnSettings.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnSettings.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(240)))), ((int)(((byte)(240)))));
-            this.btnSettings.FlatAppearance.BorderSize = 0;
-            this.btnSettings.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnSettings.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnSettings.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(64)))), ((int)(((byte)(64)))));
-            this.btnSettings.Location = new System.Drawing.Point(250, 337);
-            this.btnSettings.Name = "btnSettings";
-            this.btnSettings.Size = new System.Drawing.Size(100, 40);
-            this.btnSettings.TabIndex = 7;
-            this.btnSettings.Text = "设置";
-            this.btnSettings.UseVisualStyleBackColor = false;
-            this.btnSettings.Click += new System.EventHandler(this.btnSettings_Click);
-            // 
             // lblMainLabel
             // 
             this.lblMainLabel.AutoSize = true;
             this.lblMainLabel.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblMainLabel.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(150)))), ((int)(((byte)(150)))), ((int)(((byte)(150)))));
-            this.lblMainLabel.Location = new System.Drawing.Point(20, 25);
+            this.lblMainLabel.Location = new System.Drawing.Point(100, 25);
             this.lblMainLabel.Name = "lblMainLabel";
             this.lblMainLabel.Size = new System.Drawing.Size(140, 28);
             this.lblMainLabel.TabIndex = 8;
@@ -170,7 +153,7 @@
             this.lblSubLabel.AutoSize = true;
             this.lblSubLabel.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblSubLabel.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(150)))), ((int)(((byte)(150)))), ((int)(((byte)(150)))));
-            this.lblSubLabel.Location = new System.Drawing.Point(20, 167);
+            this.lblSubLabel.Location = new System.Drawing.Point(100, 167);
             this.lblSubLabel.Name = "lblSubLabel";
             this.lblSubLabel.Size = new System.Drawing.Size(92, 28);
             this.lblSubLabel.TabIndex = 9;
@@ -181,10 +164,9 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(11F, 28F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.White;
-            this.ClientSize = new System.Drawing.Size(370, 397);
+            this.ClientSize = new System.Drawing.Size(800, 500);
             this.Controls.Add(this.lblSubLabel);
             this.Controls.Add(this.lblMainLabel);
-            this.Controls.Add(this.btnSettings);
             this.Controls.Add(this.btnStop);
             this.Controls.Add(this.btnStart);
             this.Controls.Add(this.progressBarSub);
@@ -193,10 +175,11 @@
             this.Controls.Add(this.lblSubTimer);
             this.Controls.Add(this.lblMainTimer);
             this.Font = new System.Drawing.Font("Segoe UI", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.Sizable;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.MaximizeBox = false;
+            this.MinimumSize = new System.Drawing.Size(650, 400);
+            this.MaximizeBox = true;
             this.Name = "Form1";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "专注学习提醒器";
@@ -216,7 +199,6 @@
         private System.Windows.Forms.ProgressBar progressBarSub;
         private System.Windows.Forms.Button btnStart;
         private System.Windows.Forms.Button btnStop;
-        private System.Windows.Forms.Button btnSettings;
         private System.Windows.Forms.Label lblMainLabel;
         private System.Windows.Forms.Label lblSubLabel;
     }

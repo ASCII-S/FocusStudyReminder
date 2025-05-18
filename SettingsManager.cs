@@ -48,6 +48,8 @@ namespace FocusStudyReminder
         public bool ShowPopup { get; set; }
         public CloseAction DefaultCloseAction { get; set; }
         public bool SilentMinimize { get; set; }
+        public int WindowWidth { get; set; }
+        public int WindowHeight { get; set; }
 
         private SettingsManager()
         {
@@ -66,6 +68,8 @@ namespace FocusStudyReminder
             ShowPopup = GetSetting("ShowPopup", DEFAULT_SHOW_POPUP);
             DefaultCloseAction = GetSetting("DefaultCloseAction", DEFAULT_CLOSE_ACTION);
             SilentMinimize = GetSetting("SilentMinimize", DEFAULT_SILENT_MINIMIZE);
+            WindowWidth = GetSetting("WindowWidth", 0);
+            WindowHeight = GetSetting("WindowHeight", 0);
         }
 
         // 保存设置
@@ -80,6 +84,8 @@ namespace FocusStudyReminder
             SaveSetting("ShowPopup", ShowPopup);
             SaveSetting("DefaultCloseAction", (int)DefaultCloseAction);
             SaveSetting("SilentMinimize", SilentMinimize);
+            SaveSetting("WindowWidth", WindowWidth);
+            SaveSetting("WindowHeight", WindowHeight);
         }
 
         // 获取整数设置
