@@ -17,6 +17,7 @@ namespace FocusStudyReminder
         private SettingsManager _settingsManager;
         private NotifyIcon _notifyIcon;
         private bool _isClosing = false;
+        private bool _isPaused = false;
         
         // 添加专注模式变量
         private bool _focusMode = false;
@@ -157,32 +158,44 @@ namespace FocusStudyReminder
                 case TimerState.Stopped:
                     lblStatus.Text = "已停止";
                     lblStatus.ForeColor = Color.Gray;
+                    btnStart.Visible = true;
                     btnStart.Enabled = true;
+                    btnPause.Visible = false;
                     btnStop.Enabled = false;
                     lblMainTimer.Text = "00:00";
                     lblSubTimer.Text = "00:00";
                     progressBarMain.Value = 0;
                     progressBarSub.Value = 0;
+                    _isPaused = false;
                     break;
                     
                 case TimerState.Study:
-                    lblStatus.Text = "学习中";
-                    lblStatus.ForeColor = Color.Green;
-                    btnStart.Enabled = false;
+                    lblStatus.Text = _isPaused ? "已暂停" : "学习中";
+                    lblStatus.ForeColor = _isPaused ? Color.Orange : Color.Green;
+                    btnStart.Visible = false;
+                    btnPause.Visible = true;
+                    btnPause.Enabled = true;
+                    btnPause.Text = _isPaused ? "继续" : "暂停";
                     btnStop.Enabled = true;
                     break;
                     
                 case TimerState.Rest:
-                    lblStatus.Text = "休息中";
-                    lblStatus.ForeColor = Color.Blue;
-                    btnStart.Enabled = false;
+                    lblStatus.Text = _isPaused ? "已暂停" : "休息中";
+                    lblStatus.ForeColor = _isPaused ? Color.Orange : Color.Blue;
+                    btnStart.Visible = false;
+                    btnPause.Visible = true;
+                    btnPause.Enabled = true;
+                    btnPause.Text = _isPaused ? "继续" : "暂停";
                     btnStop.Enabled = true;
                     break;
                     
                 case TimerState.Meditation:
-                    lblStatus.Text = "冥想中";
-                    lblStatus.ForeColor = Color.Purple;
-                    btnStart.Enabled = false;
+                    lblStatus.Text = _isPaused ? "已暂停" : "冥想中";
+                    lblStatus.ForeColor = _isPaused ? Color.Orange : Color.Purple;
+                    btnStart.Visible = false;
+                    btnPause.Visible = true;
+                    btnPause.Enabled = true;
+                    btnPause.Text = _isPaused ? "继续" : "暂停";
                     btnStop.Enabled = true;
                     break;
             }
@@ -259,8 +272,6 @@ namespace FocusStudyReminder
             {
                 // 子计时器为随机时间，不应该使用剩余时间作为总时间
                 // 应该获取初始设置的随机时间
-                int minMinutes = _settingsManager.MinRandomMinutes;
-                int maxMinutes = _settingsManager.MaxRandomMinutes;
                 int initialSeconds = _timerManager.GetSubInitialSeconds();
                 totalSeconds = initialSeconds > 0 ? initialSeconds : remainingSeconds + 1; // 防止除零错误
             }
@@ -381,6 +392,28 @@ namespace FocusStudyReminder
         private void btnStart_Click(object sender, EventArgs e)
         {
             _timerManager.StartStudySession();
+        }
+        
+        // 暂停按钮点击事件
+        private void btnPause_Click(object sender, EventArgs e)
+        {
+            if (_isPaused)
+            {
+                // 如果已暂停，则继续
+                _timerManager.Resume();
+                _isPaused = false;
+                btnPause.Text = "暂停";
+            }
+            else
+            {
+                // 如果未暂停，则暂停
+                _timerManager.Pause();
+                _isPaused = true;
+                btnPause.Text = "继续";
+            }
+            
+            // 更新UI状态
+            UpdateUI();
         }
         
         // 停止按钮点击事件
@@ -792,18 +825,22 @@ namespace FocusStudyReminder
             };
             
             buttonPanel.Controls.Add(btnStart);
+            buttonPanel.Controls.Add(btnPause);
             buttonPanel.Controls.Add(btnStop);
             
             // 设置按钮属性
             int btnWidth = 120;
             int btnHeight = 40;
             btnStart.Size = new Size(btnWidth, btnHeight);
+            btnPause.Size = new Size(btnWidth, btnHeight);
             btnStop.Size = new Size(btnWidth, btnHeight);
             
             // 动态调整按钮位置
             buttonPanel.Resize += (s, e) => 
             {
+                // 开始和暂停按钮共用同一位置，按钮间增加更多间距
                 btnStart.Location = new Point(buttonPanel.Width / 4 - btnWidth / 2, buttonPanel.Height / 2 - btnHeight / 2);
+                btnPause.Location = new Point(buttonPanel.Width / 4 - btnWidth / 2, buttonPanel.Height / 2 - btnHeight / 2);
                 btnStop.Location = new Point(buttonPanel.Width * 3 / 4 - btnWidth / 2, buttonPanel.Height / 2 - btnHeight / 2);
             };
             
@@ -812,6 +849,7 @@ namespace FocusStudyReminder
             // 初始调整按钮位置
             buttonPanel.Size = new Size(layoutPanel.GetColumnWidths()[1], layoutPanel.GetRowHeights()[5]);
             btnStart.Location = new Point(buttonPanel.Width / 4 - btnWidth / 2, buttonPanel.Height / 2 - btnHeight / 2);
+            btnPause.Location = new Point(buttonPanel.Width / 4 - btnWidth / 2, buttonPanel.Height / 2 - btnHeight / 2);
             btnStop.Location = new Point(buttonPanel.Width * 3 / 4 - btnWidth / 2, buttonPanel.Height / 2 - btnHeight / 2);
         }
         
@@ -1012,15 +1050,15 @@ namespace FocusStudyReminder
             Panel pnlMinRandomMinutes = new Panel { Width = 350, Height = 40, Margin = new Padding(3, 5, 3, 5) };
             Label lblMinRandomMinutes = new Label
             {
-                Text = "随机提醒最小间隔(分钟):",
+                Text = "随机提醒最小间隔(秒):",
                 AutoSize = true,
                 Font = new Font("微软雅黑", 10),
                 Location = new Point(0, 10)
             };
             nudMinRandomMinutes = new NumericUpDown
             {
-                Minimum = 1,
-                Maximum = 30,
+                Minimum = 30,  // 最少30秒
+                Maximum = 1800, // 最多30分钟
                 Width = 120,
                 Font = new Font("微软雅黑", 10),
                 Location = new Point(220, 8)
@@ -1031,15 +1069,15 @@ namespace FocusStudyReminder
             Panel pnlMaxRandomMinutes = new Panel { Width = 350, Height = 40, Margin = new Padding(3, 5, 3, 5) };
             Label lblMaxRandomMinutes = new Label
             {
-                Text = "随机提醒最大间隔(分钟):",
+                Text = "随机提醒最大间隔(秒):",
                 AutoSize = true,
                 Font = new Font("微软雅黑", 10),
                 Location = new Point(0, 10)
             };
             nudMaxRandomMinutes = new NumericUpDown
             {
-                Minimum = 1,
-                Maximum = 60,
+                Minimum = 30,  // 最少30秒
+                Maximum = 3600, // 最多60分钟
                 Width = 120,
                 Font = new Font("微软雅黑", 10),
                 Location = new Point(220, 8)
@@ -1275,8 +1313,8 @@ namespace FocusStudyReminder
             nudStudyMinutes.Value = _settingsManager.StudyMinutes;
             nudRestMinutes.Value = _settingsManager.RestMinutes;
             nudMeditationSeconds.Value = _settingsManager.MeditationSeconds;
-            nudMinRandomMinutes.Value = _settingsManager.MinRandomMinutes;
-            nudMaxRandomMinutes.Value = _settingsManager.MaxRandomMinutes;
+            nudMinRandomMinutes.Value = _settingsManager.MinRandomSeconds;
+            nudMaxRandomMinutes.Value = _settingsManager.MaxRandomSeconds;
             txtSoundFile.Text = _settingsManager.SoundFile;
             chkShowPopup.Checked = _settingsManager.ShowPopup;
             
@@ -1318,8 +1356,8 @@ namespace FocusStudyReminder
             _settingsManager.StudyMinutes = (int)nudStudyMinutes.Value;
             _settingsManager.RestMinutes = (int)nudRestMinutes.Value;
             _settingsManager.MeditationSeconds = (int)nudMeditationSeconds.Value;
-            _settingsManager.MinRandomMinutes = (int)nudMinRandomMinutes.Value;
-            _settingsManager.MaxRandomMinutes = (int)nudMaxRandomMinutes.Value;
+            _settingsManager.MinRandomSeconds = (int)nudMinRandomMinutes.Value;
+            _settingsManager.MaxRandomSeconds = (int)nudMaxRandomMinutes.Value;
             _settingsManager.SoundFile = txtSoundFile.Text;
             _settingsManager.ShowPopup = chkShowPopup.Checked;
             

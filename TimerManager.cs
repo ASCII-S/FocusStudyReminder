@@ -79,6 +79,9 @@ namespace FocusStudyReminder
             // 开始子计时器（随机倒计时）
             StartRandomSubTimer();
             
+            // 播放提示音
+            SoundManager.Instance.Play();
+            
             // 触发事件
             StateChanged?.Invoke(this, _currentState);
             StudySessionStarted?.Invoke(this, EventArgs.Empty);
@@ -97,6 +100,9 @@ namespace FocusStudyReminder
             _mainRemainingSeconds = SettingsManager.Instance.RestMinutes * 60;
             _currentState = TimerState.Rest;
             _mainTimer.Start();
+            
+            // 播放提示音
+            SoundManager.Instance.Play();
             
             // 触发事件
             StateChanged?.Invoke(this, _currentState);
@@ -158,13 +164,13 @@ namespace FocusStudyReminder
             if (_currentState != TimerState.Study)
                 return;
 
-            // 生成随机时间（分钟）
-            int minMinutes = SettingsManager.Instance.MinRandomMinutes;
-            int maxMinutes = SettingsManager.Instance.MaxRandomMinutes;
-            int randomMinutes = _random.Next(minMinutes, maxMinutes + 1);
+            // 生成随机时间（秒）
+            int minSeconds = SettingsManager.Instance.MinRandomSeconds;
+            int maxSeconds = SettingsManager.Instance.MaxRandomSeconds;
+            int randomSeconds = _random.Next(minSeconds, maxSeconds + 1);
             
             // 设置子计时器时间
-            _subRemainingSeconds = randomMinutes * 60;
+            _subRemainingSeconds = randomSeconds;
             // 记录初始总秒数，用于进度条计算
             _subInitialSeconds = _subRemainingSeconds;
             
@@ -249,6 +255,9 @@ namespace FocusStudyReminder
             if (_mainRemainingSeconds <= 0)
             {
                 _mainTimer.Stop();
+                
+                // 播放提示音
+                SoundManager.Instance.Play();
                 
                 if (_currentState == TimerState.Study)
                 {

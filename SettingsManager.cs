@@ -19,8 +19,8 @@ namespace FocusStudyReminder
         private const int DEFAULT_STUDY_MINUTES = 90;
         private const int DEFAULT_REST_MINUTES = 20;
         private const int DEFAULT_MEDITATION_SECONDS = 20;
-        private const int DEFAULT_MIN_RANDOM_MINUTES = 3;
-        private const int DEFAULT_MAX_RANDOM_MINUTES = 5;
+        private const int DEFAULT_MIN_RANDOM_SECONDS = 180; // 3分钟 = 180秒
+        private const int DEFAULT_MAX_RANDOM_SECONDS = 300; // 5分钟 = 300秒
         private const string DEFAULT_SOUND_FILE = "default.wav";
         private const bool DEFAULT_SHOW_POPUP = true;
         private const CloseAction DEFAULT_CLOSE_ACTION = CloseAction.MinimizeToTray;
@@ -42,8 +42,8 @@ namespace FocusStudyReminder
         public int StudyMinutes { get; set; }
         public int RestMinutes { get; set; }
         public int MeditationSeconds { get; set; }
-        public int MinRandomMinutes { get; set; }
-        public int MaxRandomMinutes { get; set; }
+        public int MinRandomSeconds { get; set; } // 改为秒
+        public int MaxRandomSeconds { get; set; } // 改为秒
         public string SoundFile { get; set; }
         public bool ShowPopup { get; set; }
         public CloseAction DefaultCloseAction { get; set; }
@@ -62,8 +62,27 @@ namespace FocusStudyReminder
             StudyMinutes = GetSetting("StudyMinutes", DEFAULT_STUDY_MINUTES);
             RestMinutes = GetSetting("RestMinutes", DEFAULT_REST_MINUTES);
             MeditationSeconds = GetSetting("MeditationSeconds", DEFAULT_MEDITATION_SECONDS);
-            MinRandomMinutes = GetSetting("MinRandomMinutes", DEFAULT_MIN_RANDOM_MINUTES);
-            MaxRandomMinutes = GetSetting("MaxRandomMinutes", DEFAULT_MAX_RANDOM_MINUTES);
+            
+            // 兼容旧配置 - 如果存在MinRandomMinutes，则转换为秒
+            if (ConfigurationManager.AppSettings["MinRandomMinutes"] != null && int.TryParse(ConfigurationManager.AppSettings["MinRandomMinutes"], out int minMinutes))
+            {
+                MinRandomSeconds = minMinutes * 60;
+            }
+            else
+            {
+                MinRandomSeconds = GetSetting("MinRandomSeconds", DEFAULT_MIN_RANDOM_SECONDS);
+            }
+            
+            // 兼容旧配置 - 如果存在MaxRandomMinutes，则转换为秒
+            if (ConfigurationManager.AppSettings["MaxRandomMinutes"] != null && int.TryParse(ConfigurationManager.AppSettings["MaxRandomMinutes"], out int maxMinutes))
+            {
+                MaxRandomSeconds = maxMinutes * 60;
+            }
+            else
+            {
+                MaxRandomSeconds = GetSetting("MaxRandomSeconds", DEFAULT_MAX_RANDOM_SECONDS);
+            }
+            
             SoundFile = GetSetting("SoundFile", DEFAULT_SOUND_FILE);
             ShowPopup = GetSetting("ShowPopup", DEFAULT_SHOW_POPUP);
             DefaultCloseAction = GetSetting("DefaultCloseAction", DEFAULT_CLOSE_ACTION);
@@ -78,14 +97,18 @@ namespace FocusStudyReminder
             SaveSetting("StudyMinutes", StudyMinutes);
             SaveSetting("RestMinutes", RestMinutes);
             SaveSetting("MeditationSeconds", MeditationSeconds);
-            SaveSetting("MinRandomMinutes", MinRandomMinutes);
-            SaveSetting("MaxRandomMinutes", MaxRandomMinutes);
+            SaveSetting("MinRandomSeconds", MinRandomSeconds);
+            SaveSetting("MaxRandomSeconds", MaxRandomSeconds);
             SaveSetting("SoundFile", SoundFile);
             SaveSetting("ShowPopup", ShowPopup);
             SaveSetting("DefaultCloseAction", (int)DefaultCloseAction);
             SaveSetting("SilentMinimize", SilentMinimize);
             SaveSetting("WindowWidth", WindowWidth);
             SaveSetting("WindowHeight", WindowHeight);
+            
+            // 移除旧的分钟配置（如果存在）
+            RemoveSetting("MinRandomMinutes");
+            RemoveSetting("MaxRandomMinutes");
         }
 
         // 获取整数设置
@@ -132,6 +155,18 @@ namespace FocusStudyReminder
                 config.AppSettings.Settings.Add(key, value.ToString());
             config.Save(ConfigurationSaveMode.Modified);
             ConfigurationManager.RefreshSection("appSettings");
+        }
+
+        // 移除设置项
+        private void RemoveSetting(string key)
+        {
+            Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+            if (config.AppSettings.Settings[key] != null)
+            {
+                config.AppSettings.Settings.Remove(key);
+                config.Save(ConfigurationSaveMode.Modified);
+                ConfigurationManager.RefreshSection("appSettings");
+            }
         }
     }
 } 

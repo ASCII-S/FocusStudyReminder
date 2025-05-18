@@ -36,6 +36,7 @@
             this.progressBarSub = new System.Windows.Forms.ProgressBar();
             this.btnStart = new System.Windows.Forms.Button();
             this.btnStop = new System.Windows.Forms.Button();
+            this.btnPause = new System.Windows.Forms.Button();
             this.lblMainLabel = new System.Windows.Forms.Label();
             this.lblSubLabel = new System.Windows.Forms.Label();
             this.SuspendLayout();
@@ -137,6 +138,23 @@
             this.btnStop.UseVisualStyleBackColor = false;
             this.btnStop.Click += new System.EventHandler(this.btnStop_Click);
             // 
+            // btnPause
+            // 
+            this.btnPause.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
+            this.btnPause.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(180)))), ((int)(((byte)(0)))));
+            this.btnPause.Enabled = false;
+            this.btnPause.FlatAppearance.BorderSize = 0;
+            this.btnPause.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnPause.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnPause.ForeColor = System.Drawing.Color.White;
+            this.btnPause.Location = new System.Drawing.Point(330, 337);
+            this.btnPause.Name = "btnPause";
+            this.btnPause.Size = new System.Drawing.Size(100, 40);
+            this.btnPause.TabIndex = 7;
+            this.btnPause.Text = "暂停";
+            this.btnPause.UseVisualStyleBackColor = false;
+            this.btnPause.Click += new System.EventHandler(this.btnPause_Click);
+            // 
             // lblMainLabel
             // 
             this.lblMainLabel.AutoSize = true;
@@ -167,6 +185,7 @@
             this.ClientSize = new System.Drawing.Size(800, 500);
             this.Controls.Add(this.lblSubLabel);
             this.Controls.Add(this.lblMainLabel);
+            this.Controls.Add(this.btnPause);
             this.Controls.Add(this.btnStop);
             this.Controls.Add(this.btnStart);
             this.Controls.Add(this.progressBarSub);
@@ -199,6 +218,7 @@
         private System.Windows.Forms.ProgressBar progressBarSub;
         private System.Windows.Forms.Button btnStart;
         private System.Windows.Forms.Button btnStop;
+        private System.Windows.Forms.Button btnPause;
         private System.Windows.Forms.Label lblMainLabel;
         private System.Windows.Forms.Label lblSubLabel;
     }
