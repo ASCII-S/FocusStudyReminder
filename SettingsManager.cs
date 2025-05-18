@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Configuration;
 using System.IO;
+using System.Linq;
 
 namespace FocusStudyReminder
 {
@@ -25,6 +27,7 @@ namespace FocusStudyReminder
         private const bool DEFAULT_SHOW_POPUP = true;
         private const CloseAction DEFAULT_CLOSE_ACTION = CloseAction.MinimizeToTray;
         private const bool DEFAULT_SILENT_MINIMIZE = true;
+        private const string CUSTOM_SOUNDS_SEPARATOR = "|";
 
         // 单例模式
         private static SettingsManager _instance;
@@ -109,6 +112,31 @@ namespace FocusStudyReminder
             // 移除旧的分钟配置（如果存在）
             RemoveSetting("MinRandomMinutes");
             RemoveSetting("MaxRandomMinutes");
+        }
+
+        // 获取自定义音效历史
+        public List<string> GetCustomSounds()
+        {
+            string customSoundsStr = GetSetting("CustomSounds", string.Empty);
+            if (string.IsNullOrEmpty(customSoundsStr))
+                return new List<string>();
+
+            return customSoundsStr.Split(new[] { CUSTOM_SOUNDS_SEPARATOR }, StringSplitOptions.RemoveEmptyEntries)
+                                .Where(File.Exists)  // 只返回仍然存在的文件
+                                .ToList();
+        }
+
+        // 保存自定义音效历史
+        public void SaveCustomSounds(List<string> customSounds)
+        {
+            if (customSounds == null)
+                customSounds = new List<string>();
+
+            // 只保存存在的文件路径
+            string customSoundsStr = string.Join(CUSTOM_SOUNDS_SEPARATOR, 
+                customSounds.Where(File.Exists).Distinct().Take(10));  // 最多保存10个历史记录
+            
+            SaveSetting("CustomSounds", customSoundsStr);
         }
 
         // 获取整数设置

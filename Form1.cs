@@ -36,7 +36,7 @@ namespace FocusStudyReminder
         private NumericUpDown nudMeditationSeconds;
         private NumericUpDown nudMinRandomMinutes;
         private NumericUpDown nudMaxRandomMinutes;
-        private TextBox txtSoundFile;
+        private ComboBox cboSoundFile;
         private CheckBox chkShowPopup;
         private RadioButton radExit;
         private RadioButton radMinimize;
@@ -53,6 +53,19 @@ namespace FocusStudyReminder
         private TabPage tabNotification;
         private TabPage tabWindow;
         private Button btnSaveSettings;
+
+        // 添加默认音效列表
+        private readonly string[] DefaultSounds = new string[]
+        {
+            "default.wav",
+            "bell.wav",
+            "chime.wav",
+            "notification.wav",
+            "ding.wav"
+        };
+        
+        // 用户自定义音效历史记录
+        private List<string> customSounds;
 
         public Form1()
         {
@@ -1085,7 +1098,7 @@ namespace FocusStudyReminder
             pnlMaxRandomMinutes.Controls.Add(lblMaxRandomMinutes);
             pnlMaxRandomMinutes.Controls.Add(nudMaxRandomMinutes);
             
-            // 创建通知设置控件
+            // 修改音效文件选择控件
             Panel pnlSoundFile = new Panel { Width = 370, Height = 40, Margin = new Padding(3, 5, 3, 5) };
             Label lblSoundFile = new Label
             {
@@ -1102,12 +1115,22 @@ namespace FocusStudyReminder
                 Location = new Point(120, 5)
             };
             
-            txtSoundFile = new TextBox
+            // 替换TextBox为ComboBox
+            cboSoundFile = new ComboBox
             {
                 Width = 240,
                 Font = new Font("微软雅黑", 9),
-                Location = new Point(0, 0)
+                Location = new Point(0, 0),
+                DropDownStyle = ComboBoxStyle.DropDown,
+                AutoCompleteMode = AutoCompleteMode.SuggestAppend,
+                AutoCompleteSource = AutoCompleteSource.ListItems
             };
+            
+            // 加载默认音效和自定义音效历史
+            LoadSoundFiles();
+            
+            // 添加ComboBox改变事件
+            cboSoundFile.SelectedIndexChanged += CboSoundFile_SelectedIndexChanged;
             
             btnBrowseSoundFile = new Button
             {
@@ -1127,7 +1150,7 @@ namespace FocusStudyReminder
             };
             btnTestSound.Click += BtnTestSound_Click;
             
-            soundFilePanel.Controls.Add(txtSoundFile);
+            soundFilePanel.Controls.Add(cboSoundFile);
             pnlSoundFile.Controls.Add(lblSoundFile);
             pnlSoundFile.Controls.Add(soundFilePanel);
             
@@ -1315,7 +1338,7 @@ namespace FocusStudyReminder
             nudMeditationSeconds.Value = _settingsManager.MeditationSeconds;
             nudMinRandomMinutes.Value = _settingsManager.MinRandomSeconds;
             nudMaxRandomMinutes.Value = _settingsManager.MaxRandomSeconds;
-            txtSoundFile.Text = _settingsManager.SoundFile;
+            cboSoundFile.Text = _settingsManager.SoundFile;
             chkShowPopup.Checked = _settingsManager.ShowPopup;
             
             // 设置关闭行为选项
@@ -1358,7 +1381,7 @@ namespace FocusStudyReminder
             _settingsManager.MeditationSeconds = (int)nudMeditationSeconds.Value;
             _settingsManager.MinRandomSeconds = (int)nudMinRandomMinutes.Value;
             _settingsManager.MaxRandomSeconds = (int)nudMaxRandomMinutes.Value;
-            _settingsManager.SoundFile = txtSoundFile.Text;
+            _settingsManager.SoundFile = cboSoundFile.Text;
             _settingsManager.ShowPopup = chkShowPopup.Checked;
             
             // 保存关闭行为设置
@@ -1394,6 +1417,53 @@ namespace FocusStudyReminder
             }
         }
         
+        // 加载音效文件列表
+        private void LoadSoundFiles()
+        {
+            cboSoundFile.Items.Clear();
+            
+            // 添加默认音效
+            foreach (string sound in DefaultSounds)
+            {
+                cboSoundFile.Items.Add(sound);
+            }
+            
+            // 加载自定义音效历史
+            customSounds = _settingsManager.GetCustomSounds();
+            if (customSounds != null && customSounds.Count > 0)
+            {
+                foreach (string sound in customSounds)
+                {
+                    if (File.Exists(sound) && !cboSoundFile.Items.Contains(sound))
+                    {
+                        cboSoundFile.Items.Add(sound);
+                    }
+                }
+            }
+            
+            // 设置当前选中的音效
+            string currentSound = _settingsManager.SoundFile;
+            if (!string.IsNullOrEmpty(currentSound))
+            {
+                cboSoundFile.Text = currentSound;
+            }
+            else
+            {
+                cboSoundFile.SelectedIndex = 0; // 默认选择第一个音效
+            }
+        }
+
+        // ComboBox选中项改变事件
+        private void CboSoundFile_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (!string.IsNullOrEmpty(cboSoundFile.Text))
+            {
+                // 测试播放选择的音效
+                SoundManager.Instance.LoadSound(cboSoundFile.Text);
+                SoundManager.Instance.Play();
+            }
+        }
+
         private void BtnBrowseSoundFile_Click(object sender, EventArgs e)
         {
             using (OpenFileDialog openFileDialog = new OpenFileDialog())
@@ -1403,10 +1473,25 @@ namespace FocusStudyReminder
 
                 if (openFileDialog.ShowDialog() == DialogResult.OK)
                 {
-                    txtSoundFile.Text = openFileDialog.FileName;
+                    string selectedFile = openFileDialog.FileName;
+                    
+                    // 添加到ComboBox并选中
+                    if (!cboSoundFile.Items.Contains(selectedFile))
+                    {
+                        cboSoundFile.Items.Add(selectedFile);
+                        
+                        // 添加到自定义音效历史
+                        if (customSounds == null) customSounds = new List<string>();
+                        if (!customSounds.Contains(selectedFile))
+                        {
+                            customSounds.Add(selectedFile);
+                            _settingsManager.SaveCustomSounds(customSounds);
+                        }
+                    }
+                    cboSoundFile.Text = selectedFile;
                     
                     // 测试播放选择的音效
-                    SoundManager.Instance.LoadSound(openFileDialog.FileName);
+                    SoundManager.Instance.LoadSound(selectedFile);
                     SoundManager.Instance.Play();
                 }
             }
@@ -1415,9 +1500,9 @@ namespace FocusStudyReminder
         private void BtnTestSound_Click(object sender, EventArgs e)
         {
             // 测试播放当前音效
-            if (!string.IsNullOrEmpty(txtSoundFile.Text))
+            if (!string.IsNullOrEmpty(cboSoundFile.Text))
             {
-                SoundManager.Instance.LoadSound(txtSoundFile.Text);
+                SoundManager.Instance.LoadSound(cboSoundFile.Text);
                 SoundManager.Instance.Play();
             }
             else
@@ -1428,10 +1513,8 @@ namespace FocusStudyReminder
 
         private void BtnDefaultSound_Click(object sender, EventArgs e)
         {
-            // 恢复默认音效
-            txtSoundFile.Text = "default.wav";
-            SoundManager.Instance.LoadDefaultSound();
-            SoundManager.Instance.Play();
+            // 选择第一个默认音效
+            cboSoundFile.SelectedIndex = 0;
         }
         
         private void LoadSettings()
