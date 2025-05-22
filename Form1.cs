@@ -33,6 +33,7 @@ namespace FocusStudyReminder
         private NumericUpDown nudMinRandomMinutes;
         private NumericUpDown nudMaxRandomMinutes;
         private ComboBox cboSoundFile;
+        private ComboBox cboMainTimerSoundFile;
         private CheckBox chkShowPopup;
         private RadioButton radExit;
         private RadioButton radMinimize;
@@ -40,8 +41,11 @@ namespace FocusStudyReminder
         private RadioButton radAskEveryTime;
         private CheckBox chkSilentMinimize;
         private Button btnBrowseSoundFile;
+        private Button btnBrowseMainTimerSoundFile;
         private Button btnTestSound;
+        private Button btnTestMainTimerSound;
         private Button btnDefaultSound;
+        private Button btnDefaultMainTimerSound;
 
         // 设置标签页控件
         private TabControl settingsTabControl;
@@ -57,7 +61,8 @@ namespace FocusStudyReminder
             "bell.wav",
             "chime.wav",
             "notification.wav",
-            "ding.wav"
+            "ding.wav",
+            "pianos.mp3",
         };
 
         // 用户自定义音效历史记录
@@ -467,6 +472,9 @@ namespace FocusStudyReminder
         // 窗体关闭事件
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
+            // 停止所有测试音效播放
+            SoundManager.Instance.Stop();
+            
             if (!_isClosing && e.CloseReason == CloseReason.UserClosing)
             {
                 // 根据设置选择关闭行为
@@ -926,6 +934,9 @@ namespace FocusStudyReminder
         // 添加专注模式切换事件处理
         private void BtnToggleFocus_Click(object sender, EventArgs e)
         {
+            // 停止所有测试音效播放
+            SoundManager.Instance.Stop();
+            
             _focusMode = !_focusMode;
 
             if (_focusMode)
@@ -1109,7 +1120,7 @@ namespace FocusStudyReminder
             Panel pnlSoundFile = new Panel { Width = 370, Height = 40, Margin = new Padding(3, 5, 3, 5) };
             Label lblSoundFile = new Label
             {
-                Text = "提示音效文件:",
+                Text = "小计时器提示音:",
                 AutoSize = true,
                 Font = new Font("微软雅黑", 10),
                 Location = new Point(0, 10)
@@ -1172,7 +1183,86 @@ namespace FocusStudyReminder
             btnDefaultSound.Click += BtnDefaultSound_Click;
             pnlDefaultSound.Controls.Add(btnDefaultSound);
 
+            // 新增大计时器音效选择控件
+            Panel pnlMainTimerSoundFile = new Panel { Width = 370, Height = 40, Margin = new Padding(3, 5, 3, 5) };
+            Label lblMainTimerSoundFile = new Label
+            {
+                Text = "大计时器提示音:",
+                AutoSize = true,
+                Font = new Font("微软雅黑", 10),
+                Location = new Point(0, 10)
+            };
+
+            Panel mainTimerSoundFilePanel = new Panel
+            {
+                Width = 240,
+                Height = 30,
+                Location = new Point(120, 5)
+            };
+
+            cboMainTimerSoundFile = new ComboBox
+            {
+                Width = 240,
+                Font = new Font("微软雅黑", 9),
+                Location = new Point(0, 0),
+                DropDownStyle = ComboBoxStyle.DropDown,
+                AutoCompleteMode = AutoCompleteMode.SuggestAppend,
+                AutoCompleteSource = AutoCompleteSource.ListItems
+            };
+
+            // 加载大计时器音效文件
+            LoadMainTimerSoundFiles();
+
+            // 添加ComboBox改变事件
+            cboMainTimerSoundFile.SelectedIndexChanged += CboMainTimerSoundFile_SelectedIndexChanged;
+
+            btnBrowseMainTimerSoundFile = new Button
+            {
+                Text = "浏览",
+                Width = 60,
+                Location = new Point(245, 0),
+                Font = new Font("微软雅黑", 9)
+            };
+            btnBrowseMainTimerSoundFile.Click += BtnBrowseMainTimerSoundFile_Click;
+
+            btnTestMainTimerSound = new Button
+            {
+                Text = "测试",
+                Width = 60,
+                Location = new Point(310, 0),
+                Font = new Font("微软雅黑", 9)
+            };
+            btnTestMainTimerSound.Click += BtnTestMainTimerSound_Click;
+
+            mainTimerSoundFilePanel.Controls.Add(cboMainTimerSoundFile);
+            pnlMainTimerSoundFile.Controls.Add(lblMainTimerSoundFile);
+            pnlMainTimerSoundFile.Controls.Add(mainTimerSoundFilePanel);
+
+            Panel pnlDefaultMainTimerSound = new Panel { Width = 370, Height = 40, Margin = new Padding(3, 5, 3, 5) };
+            btnDefaultMainTimerSound = new Button
+            {
+                Text = "恢复默认音效",
+                AutoSize = true,
+                Font = new Font("微软雅黑", 9),
+                Location = new Point(120, 5)
+            };
+            btnDefaultMainTimerSound.Click += BtnDefaultMainTimerSound_Click;
+            pnlDefaultMainTimerSound.Controls.Add(btnDefaultMainTimerSound);
+
             // 添加控件到通知面板
+            notificationPanel.Controls.Add(pnlMainTimerSoundFile);
+
+            // 添加浏览和测试按钮到控件面板
+            Panel btnMainTimerPanel = new Panel { Width = 370, Height = 40, Margin = new Padding(3, 5, 3, 5) };
+            btnMainTimerPanel.Controls.Add(btnBrowseMainTimerSoundFile);
+            btnMainTimerPanel.Controls.Add(btnTestMainTimerSound);
+            btnBrowseMainTimerSoundFile.Location = new Point(120, 5);
+            btnTestMainTimerSound.Location = new Point(190, 5);
+            notificationPanel.Controls.Add(btnMainTimerPanel);
+
+            notificationPanel.Controls.Add(pnlDefaultMainTimerSound);
+
+            // 然后添加小计时器音效控件
             notificationPanel.Controls.Add(pnlSoundFile);
 
             // 添加浏览和测试按钮到控件面板
@@ -1306,6 +1396,9 @@ namespace FocusStudyReminder
 
         private void BtnNavHome_Click(object sender, EventArgs e)
         {
+            // 停止所有测试音效播放
+            SoundManager.Instance.Stop();
+            
             ActiveNavButton((Button)sender);
             ShowMainPanel();
         }
@@ -1333,6 +1426,9 @@ namespace FocusStudyReminder
 
         private void ShowMainPanel()
         {
+            // 停止所有测试音效播放
+            SoundManager.Instance.Stop();
+            
             mainContentPanel.BringToFront();
             mainContentPanel.Visible = true;
             settingsContentPanel.Visible = false;
@@ -1347,6 +1443,7 @@ namespace FocusStudyReminder
             nudMinRandomMinutes.Value = _settingsManager.MinRandomSeconds;
             nudMaxRandomMinutes.Value = _settingsManager.MaxRandomSeconds;
             cboSoundFile.Text = _settingsManager.SoundFile;
+            cboMainTimerSoundFile.Text = _settingsManager.MainTimerSoundFile; // 更新大计时器音效
             chkShowPopup.Checked = _settingsManager.ShowPopup;
 
             // 设置关闭行为选项
@@ -1390,6 +1487,7 @@ namespace FocusStudyReminder
             _settingsManager.MinRandomSeconds = (int)nudMinRandomMinutes.Value;
             _settingsManager.MaxRandomSeconds = (int)nudMaxRandomMinutes.Value;
             _settingsManager.SoundFile = cboSoundFile.Text;
+            _settingsManager.MainTimerSoundFile = cboMainTimerSoundFile.Text;
             _settingsManager.ShowPopup = chkShowPopup.Checked;
 
             // 保存关闭行为设置
@@ -1408,8 +1506,12 @@ namespace FocusStudyReminder
             // 保存到配置
             _settingsManager.SaveSettings();
 
+            // 停止正在播放的测试音效
+            SoundManager.Instance.Stop();
+            
             // 重新加载音效
             SoundManager.Instance.LoadSound(_settingsManager.SoundFile);
+            SoundManager.Instance.LoadMainTimerSound(_settingsManager.MainTimerSoundFile);
 
             // 更新计时器设置
             _timerManager.UpdateSettings();
@@ -1476,7 +1578,7 @@ namespace FocusStudyReminder
         {
             using (OpenFileDialog openFileDialog = new OpenFileDialog())
             {
-                openFileDialog.Filter = "WAV音频文件(*.wav)|*.wav|所有文件(*.*)|*.*";
+                openFileDialog.Filter = "音频文件(*.wav;*.mp3)|*.wav;*.mp3|WAV音频文件(*.wav)|*.wav|MP3音频文件(*.mp3)|*.mp3|所有文件(*.*)|*.*";
                 openFileDialog.Title = "选择提示音效文件";
 
                 if (openFileDialog.ShowDialog() == DialogResult.OK)
@@ -1523,6 +1625,104 @@ namespace FocusStudyReminder
         {
             // 选择第一个默认音效
             cboSoundFile.SelectedIndex = 0;
+        }
+
+        private void LoadMainTimerSoundFiles()
+        {
+            cboMainTimerSoundFile.Items.Clear();
+
+            // 添加默认音效
+            foreach (string sound in DefaultSounds)
+            {
+                cboMainTimerSoundFile.Items.Add(sound);
+            }
+
+            // 加载自定义音效历史
+            customSounds = _settingsManager.GetCustomSounds();
+            if (customSounds != null && customSounds.Count > 0)
+            {
+                foreach (string sound in customSounds)
+                {
+                    if (File.Exists(sound) && !cboMainTimerSoundFile.Items.Contains(sound))
+                    {
+                        cboMainTimerSoundFile.Items.Add(sound);
+                    }
+                }
+            }
+
+            // 设置当前选中的音效
+            string currentSound = _settingsManager.MainTimerSoundFile;
+            if (!string.IsNullOrEmpty(currentSound))
+            {
+                cboMainTimerSoundFile.Text = currentSound;
+            }
+            else
+            {
+                cboMainTimerSoundFile.SelectedIndex = 0; // 默认选择第一个音效
+            }
+        }
+
+        private void CboMainTimerSoundFile_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (!string.IsNullOrEmpty(cboMainTimerSoundFile.Text))
+            {
+                // 测试播放选择的音效
+                SoundManager.Instance.LoadSound(cboMainTimerSoundFile.Text);
+                SoundManager.Instance.Play();
+            }
+        }
+
+        private void BtnBrowseMainTimerSoundFile_Click(object sender, EventArgs e)
+        {
+            using (OpenFileDialog openFileDialog = new OpenFileDialog())
+            {
+                openFileDialog.Filter = "音频文件(*.wav;*.mp3)|*.wav;*.mp3|WAV音频文件(*.wav)|*.wav|MP3音频文件(*.mp3)|*.mp3|所有文件(*.*)|*.*";
+                openFileDialog.Title = "选择提示音效文件";
+
+                if (openFileDialog.ShowDialog() == DialogResult.OK)
+                {
+                    string selectedFile = openFileDialog.FileName;
+
+                    // 添加到ComboBox并选中
+                    if (!cboMainTimerSoundFile.Items.Contains(selectedFile))
+                    {
+                        cboMainTimerSoundFile.Items.Add(selectedFile);
+
+                        // 添加到自定义音效历史
+                        if (customSounds == null) customSounds = new List<string>();
+                        if (!customSounds.Contains(selectedFile))
+                        {
+                            customSounds.Add(selectedFile);
+                            _settingsManager.SaveCustomSounds(customSounds);
+                        }
+                    }
+                    cboMainTimerSoundFile.Text = selectedFile;
+
+                    // 测试播放选择的音效
+                    SoundManager.Instance.LoadMainTimerSound(selectedFile);
+                    SoundManager.Instance.PlayMainTimerSound();
+                }
+            }
+        }
+
+        private void BtnTestMainTimerSound_Click(object sender, EventArgs e)
+        {
+            // 测试播放当前音效
+            if (!string.IsNullOrEmpty(cboMainTimerSoundFile.Text))
+            {
+                SoundManager.Instance.LoadSound(cboMainTimerSoundFile.Text);
+                SoundManager.Instance.Play();
+            }
+            else
+            {
+                MessageBox.Show("请先选择一个音效文件", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+        }
+
+        private void BtnDefaultMainTimerSound_Click(object sender, EventArgs e)
+        {
+            // 选择第一个默认音效
+            cboMainTimerSoundFile.SelectedIndex = 0;
         }
 
         private void LoadSettings()

@@ -256,8 +256,8 @@ namespace FocusStudyReminder
             {
                 _mainTimer.Stop();
                 
-                // 播放提示音
-                SoundManager.Instance.Play();
+                // 播放大计时器提示音
+                SoundManager.Instance.PlayMainTimerSound();
                 
                 if (_currentState == TimerState.Study)
                 {

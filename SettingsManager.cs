@@ -21,9 +21,10 @@ namespace FocusStudyReminder
         private const int DEFAULT_STUDY_MINUTES = 90;
         private const int DEFAULT_REST_MINUTES = 20;
         private const int DEFAULT_MEDITATION_SECONDS = 20;
-        private const int DEFAULT_MIN_RANDOM_SECONDS = 180; // 3分钟 = 180秒
-        private const int DEFAULT_MAX_RANDOM_SECONDS = 300; // 5分钟 = 300秒
+        private const int DEFAULT_MIN_RANDOM_SECONDS = 600; // 10分钟 = 600秒
+        private const int DEFAULT_MAX_RANDOM_SECONDS = 900; // 15分钟 = 900秒
         private const string DEFAULT_SOUND_FILE = "default.wav";
+        private const string DEFAULT_MAIN_TIMER_SOUND_FILE = "bell.wav"; // 默认大计时器音效
         private const bool DEFAULT_SHOW_POPUP = true;
         private const CloseAction DEFAULT_CLOSE_ACTION = CloseAction.MinimizeToTray;
         private const bool DEFAULT_SILENT_MINIMIZE = true;
@@ -47,7 +48,8 @@ namespace FocusStudyReminder
         public int MeditationSeconds { get; set; }
         public int MinRandomSeconds { get; set; } // 改为秒
         public int MaxRandomSeconds { get; set; } // 改为秒
-        public string SoundFile { get; set; }
+        public string SoundFile { get; set; }     // 小计时器音效
+        public string MainTimerSoundFile { get; set; } // 大计时器音效
         public bool ShowPopup { get; set; }
         public CloseAction DefaultCloseAction { get; set; }
         public bool SilentMinimize { get; set; }
@@ -87,6 +89,7 @@ namespace FocusStudyReminder
             }
             
             SoundFile = GetSetting("SoundFile", DEFAULT_SOUND_FILE);
+            MainTimerSoundFile = GetSetting("MainTimerSoundFile", DEFAULT_MAIN_TIMER_SOUND_FILE);
             ShowPopup = GetSetting("ShowPopup", DEFAULT_SHOW_POPUP);
             DefaultCloseAction = GetSetting("DefaultCloseAction", DEFAULT_CLOSE_ACTION);
             SilentMinimize = GetSetting("SilentMinimize", DEFAULT_SILENT_MINIMIZE);
@@ -103,6 +106,7 @@ namespace FocusStudyReminder
             SaveSetting("MinRandomSeconds", MinRandomSeconds);
             SaveSetting("MaxRandomSeconds", MaxRandomSeconds);
             SaveSetting("SoundFile", SoundFile);
+            SaveSetting("MainTimerSoundFile", MainTimerSoundFile);
             SaveSetting("ShowPopup", ShowPopup);
             SaveSetting("DefaultCloseAction", (int)DefaultCloseAction);
             SaveSetting("SilentMinimize", SilentMinimize);
