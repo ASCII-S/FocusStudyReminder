@@ -62,7 +62,7 @@ namespace FocusStudyReminder
             "chime.wav",
             "notification.wav",
             "ding.wav",
-            "pianos.mp3",
+            "pianos.mp3"
         };
 
         // 用户自定义音效历史记录

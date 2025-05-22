@@ -137,6 +137,9 @@
     <Content Include="Sounds\*.wav">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="Sounds\*.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.7.2">
@@ -150,5 +153,11 @@
       <Install>false</Install>
     </BootstrapperPackage>
   </ItemGroup>
+  <Target Name="CopyCustomContent" AfterTargets="AfterPublish">
+    <ItemGroup>
+      <SoundFiles Include="$(ProjectDir)Sounds\*.mp3" />
+    </ItemGroup>
+    <Copy SourceFiles="@(SoundFiles)" DestinationFolder="$(PublishDir)Sounds\" SkipUnchangedFiles="true" />
+  </Target>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

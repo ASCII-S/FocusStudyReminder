@@ -173,29 +173,42 @@ namespace FocusStudyReminder
                 // 如果文件不存在，尝试加载默认音效
                 if (!File.Exists(fullPath))
                 {
-                    MessageBox.Show($"音效文件不存在: {fullPath}", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    Console.WriteLine($"音效文件不存在: {fullPath}");
                     
-                    // 默认音效路径
-                    string defaultPath = Path.GetExtension(soundFile).ToLower() == ".mp3" ?
-                        Path.Combine(Application.StartupPath, "Sounds", "default.mp3") :
-                        Path.Combine(Application.StartupPath, "Sounds", "default.wav");
+                    // 确定文件扩展名和默认文件名
+                    string extension = Path.GetExtension(soundFile).ToLower();
+                    string defaultFile;
                     
-                    if (!File.Exists(defaultPath))
+                    if (extension == ".mp3")
                     {
-                        // 如果默认的MP3不存在，尝试WAV
-                        defaultPath = Path.Combine(Application.StartupPath, "Sounds", "default.wav");
+                        defaultFile = "default.mp3";
+                        Console.WriteLine("尝试加载默认MP3文件");
+                    }
+                    else
+                    {
+                        defaultFile = "default.wav";
+                        Console.WriteLine("尝试加载默认WAV文件");
                     }
                     
-                    // 输出调试信息
+                    // 尝试使用对应格式的默认文件
+                    string defaultPath = Path.Combine(Application.StartupPath, "Sounds", defaultFile);
                     Console.WriteLine($"尝试加载默认音效: {defaultPath}");
+                    
+                    // 如果默认文件不存在，尝试另一种格式
+                    if (!File.Exists(defaultPath))
+                    {
+                        string alternateDefault = (extension == ".mp3") ? "default.wav" : "default.mp3";
+                        defaultPath = Path.Combine(Application.StartupPath, "Sounds", alternateDefault);
+                        Console.WriteLine($"默认音效不存在，尝试替代音效: {defaultPath}");
+                    }
                     
                     // 确保Sounds目录存在
                     Directory.CreateDirectory(Path.Combine(Application.StartupPath, "Sounds"));
                     
-                    // 如果默认音效也不存在
+                    // 如果所有默认音效都不存在
                     if (!File.Exists(defaultPath))
                     {
-                        MessageBox.Show($"默认音效文件不存在: {defaultPath}，将使用系统音效", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        Console.WriteLine("没有可用的默认音效，将使用系统声音");
                         return null;
                     }
                     
